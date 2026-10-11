@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terme zusammenfassen – Übung</title>
+<style>
+:root{--bg:#f2f5f3;--card:#fff;--tx:#17302b;--mu:#566660;--ac:#1f6f5c;--ok:#1b7a3d;--bad:#b3261e;--bd:#cfdad5;--board:#1f3d36;--chalk:#f4f1e6;--yel:#f2c94c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111a17;--card:#1a2622;--tx:#e6efeb;--mu:#9fb2ab;--ac:#5fc4a8;--ok:#6fd592;--bad:#ff8a80;--bd:#2c3d37;--board:#0c2620}}
+:root[data-theme="dark"]{--bg:#111a17;--card:#1a2622;--tx:#e6efeb;--mu:#9fb2ab;--ac:#5fc4a8;--ok:#6fd592;--bad:#ff8a80;--bd:#2c3d37;--board:#0c2620}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+.board{background:var(--board);color:var(--chalk);border-radius:6px;padding:18px 16px;border-bottom:6px solid #8a6b3f}
+.board h1{margin:0 0 6px;font:600 1.5rem/1.2 Georgia,"Times New Roman",serif}
+.board p{margin:0;color:var(--chalk);opacity:.9}
+.start{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:12px 14px;margin:14px 0;color:var(--mu);font-size:.95rem}
+.start b{color:var(--tx)}
+.tabs{display:flex;gap:8px;margin:14px 0}
+.tabs button{flex:1;padding:10px 6px;border:2px solid var(--bd);background:var(--card);color:var(--tx);border-radius:6px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button small{display:block;font-weight:400;color:var(--mu);font-size:.78rem}
+.tabs button[aria-pressed="true"]{border-color:var(--ac);background:var(--ac);color:#fff}
+.tabs button[aria-pressed="true"] small{color:#fff}
+.task{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:14px;margin:12px 0}
+.task h2{margin:0 0 4px;font-size:.95rem;color:var(--mu);font-weight:600}
+.term{font:1.5rem/1.3 Georgia,"Times New Roman",serif;margin:4px 0 10px;overflow-x:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input{flex:1;min-width:140px;padding:10px;border:2px solid var(--bd);border-radius:6px;font:1.1rem Georgia,serif;background:var(--bg);color:var(--tx)}
+button.b{padding:10px 14px;border:0;border-radius:6px;background:var(--ac);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button.g{background:transparent;color:var(--ac);border:2px solid var(--ac)}
+:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.fb{margin-top:10px;font-size:.97rem}
+.ok{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+.sum{text-align:center;margin:18px 0;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<div class="board">
+<h1>Terme zusammenfassen</h1>
+<p>Ziel: Du fasst gleichartige Terme zusammen und erklärst, warum du das darfst.</p>
+</div>
+<div class="start">
+<b>Satzanfänge zum Erklären:</b><br>
+Ich fasse … zusammen, weil … · Diese Terme sind gleichartig, weil … · Ich darf … nicht zusammenfassen, weil …
+</div>
+<div class="tabs" id="tabs"></div>
+<div id="list"></div>
+<div class="sum" id="sum"></div>
+</main>
+<script>
+const L={
+F:{n:"F",s:"Grundlagen",t:[
+{q:"3a + 2a",a:"5a"},
+{q:"4b + b",a:"5b"},
+{q:"2x + 5x + x",a:"8x"},
+{tf:"3a und 2b sind gleichartige Terme.",v:false,w:"Falsch. Gleichartig heißt: gleiche Variable. Hier sind es a und b."}]},
+G:{n:"G",s:"Standard",t:[
+{q:"5x + 3y + 2x",a:"7x+3y"},
+{q:"6a − 2a + 4b",a:"4a+4b"},
+{q:"7m + 2 + 3m − 1",a:"10m+1"},
+{tf:"4x + 3y = 7xy",v:false,w:"Falsch. x und y sind nicht gleichartig. Man darf 4x und 3y nicht zusammenfassen."}]},
+E:{n:"E",s:"Erweitert",t:[
+{q:"3x² + 5x − x² + 2x",a:"2x^2+7x"},
+{q:"4ab + 3a − ab",a:"3ab+3a"},
+{q:"5x² − 2x + 3 − 4x² + 6x − 3",a:"x^2+4x"},
+{tf:"x² + x² = x⁴",v:false,w:"Falsch. x² + x² = 2x². Beim Addieren ändert sich der Exponent nicht."}]}};
+function parse(s){
+s=s.toLowerCase().replace(/\s+/g,"").replace(/[−–]/g,"-").replace(/²/g,"^2").replace(/[*·]/g,"");
+if(!s)return null;
+const p=s.match(/[+-]?[^+-]+/g);
+if(!p||p.join("")!==s)return null;
+const m={};
+for(const t of p){
+const r=t.match(/^([+-]?)(\d*)((?:[a-z](?:\^\d)?)*)$/);
+if(!r)return null;
+const c=(r[1]==="-"?-1:1)*(r[2]===""?1:+r[2]);
+const e={};
+for(const x of r[3].matchAll(/([a-z])(?:\^(\d))?/g))e[x[1]]=(e[x[1]]||0)+(x[2]?+x[2]:1);
+const k=Object.keys(e).sort().map(v=>v+e[v]).join("");
+if(k in m)return{dup:1};
+m[k]=c;}
+for(const k in m)if(m[k]===0)delete m[k];
+return m;}
+function same(a,b){const x=Object.keys(a),y=Object.keys(b);return x.length===y.length&&x.every(k=>a[k]===b[k]);}
+let lv="F",done={};
+function tabs(){
+const t=document.getElementById("tabs");t.innerHTML="";
+for(const k in L){const b=document.createElement("button");
+b.setAttribute("aria-pressed",k===lv);
+b.innerHTML=k+"<small>"+L[k].s+"</small>";
+b.onclick=()=>{lv=k;draw();};t.appendChild(b);}}
+function mark(id){done[id]=1;
+const n=L[lv].t.filter((_,i)=>done[lv+i]).length;
+document.getElementById("sum").textContent=n+" von "+L[lv].t.length+" Aufgaben geschafft"+(n===L[lv].t.length?" – stark!":"");}
+function draw(){
+tabs();
+const list=document.getElementById("list");list.innerHTML="";
+document.getElementById("sum").textContent="";
+L[lv].t.forEach((t,i)=>{
+const id=lv+i,c=document.createElement("div");c.className="task";
+const fb=document.createElement("div");fb.className="fb";fb.setAttribute("aria-live","polite");
+if(t.tf){
+c.innerHTML="<h2>Aufgabe "+(i+1)+" · Wahr oder falsch?</h2><div class='term'></div><div class='row'></div>";
+c.querySelector(".term").textContent=t.tf;
+const r=c.querySelector(".row");
+[["Wahr",true],["Falsch",false]].forEach(([l,v])=>{
+const b=document.createElement("button");b.className="b g";b.textContent=l;
+b.onclick=()=>{
+if(v===t.v){fb.innerHTML="<span class='ok'>Richtig.</span> ";mark(id);}
+else fb.innerHTML="<span class='no'>Nicht richtig.</span> ";
+fb.appendChild(document.createTextNode(t.w));};
+r.appendChild(b);});
+}else{
+c.innerHTML="<h2>Aufgabe "+(i+1)+" · Fasse zusammen.</h2><div class='term'></div><div class='row'><input type='text' autocomplete='off' autocapitalize='off' inputmode='text' aria-label='Deine Lösung' placeholder='z. B. 5x+2y'><button class='b'>Prüfen</button><button class='b g'>Tipp</button></div>";
+c.querySelector(".term").textContent=t.q;
+const inp=c.querySelector("input"),bs=c.querySelectorAll("button");
+const chk=()=>{
+const u=parse(inp.value);
+if(!u){fb.innerHTML="<span class='no'>Das kann ich nicht lesen.</span> Schreibe z. B. 5x+2y oder x^2 für x².";return;}
+if(u.dup){fb.innerHTML="<span class='no'>Noch nicht fertig.</span> Du hast noch gleichartige Terme. Fasse weiter zusammen.";return;}
+if(same(u,parse(t.a))){fb.innerHTML="<span class='ok'>Richtig!</span> Sage jetzt: „Ich fasse … zusammen, weil …“";mark(id);}
+else fb.innerHTML="<span class='no'>Noch nicht richtig.</span> Prüfe: Welche Terme haben dieselbe Variable? Rechne nur die Zahlen davor.";};
+bs[0].onclick=chk;inp.onkeydown=e=>{if(e.key==="Enter")chk();};
+bs[1].onclick=()=>{fb.textContent="Tipp: Markiere gleichartige Terme mit derselben Farbe. Variable und Exponent müssen gleich sein. Ein Term ohne Variable ist eine Zahl für sich.";};}
+c.appendChild(fb);list.appendChild(c);});}
+draw();
+</script>
+</body>
+</html>
